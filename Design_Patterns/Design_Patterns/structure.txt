@@ -1,0 +1,22 @@
+﻿LibraryManagementSystem
+│
+├── Program
+│   └── Program.cs
+│
+├── Models
+│   ├── Book
+│   └── Member
+│
+├── Repositories
+│   ├── Interfaces
+│   |── Implementations
+│
+├── Factories
+│   ├── Interfaces
+│   └── Implementations
+│
+├── Facade
+│
+│
+├── Proxy
+
