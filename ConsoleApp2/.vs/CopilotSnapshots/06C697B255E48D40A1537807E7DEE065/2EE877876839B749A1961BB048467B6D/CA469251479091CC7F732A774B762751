@@ -1,0 +1,165 @@
+﻿using System;
+using ConsoleApp2.Core;
+using ConsoleApp2.Factories;
+using ConsoleApp2.Models;
+using ConsoleApp2.Decorators;
+using ConsoleApp2.UI;
+using ConsoleApp2.Facade;
+using ConsoleApp2.Proxies;
+
+namespace ConsoleApp2
+{
+    internal static class Program
+    {
+        private static void Main()
+        {
+            Console.Title = "Simple Library Management - Demo";
+            ConsoleUI.DrawHeader("Simple Library Management System");
+
+            // Seed data via factories
+            var bookFactory = new BookFactory();
+            var magazineFactory = new MagazineFactory();
+
+            var libFacade = new LibraryFacade(Library.Instance);
+            var proxy = new LibraryProxy(libFacade);
+
+            // seed
+            proxy.AddBook(bookFactory.CreateItem("The Hobbit", "J.R.R. Tolkien", 1937));
+            proxy.AddBook(bookFactory.CreateItem("1984", "George Orwell", 1949));
+            proxy.AddBook(magazineFactory.CreateItem("Nature - Issue 1", "Various", 2024));
+
+            bool exit = false;
+            while (!exit)
+            {
+                // Inline menu printing (DrawMenu removed)
+                var options = new[]
+                {
+                    "List all items",
+                    "Search by title",
+                    "Borrow an item",
+                    "Return an item",
+                    "Add item (admin - proxy)",
+                    "Show item details (decorator)",
+                    "Exit"
+                };
+
+                for (int i = 0; i < options.Length; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {options[i]}");
+                }
+
+                Console.WriteLine();
+
+                Console.Write("Choose option: ");
+                var key = Console.ReadLine();
+                Console.WriteLine();
+                switch (key)
+                {
+                    case "1":
+                        var all = libFacade.ListAllItems();
+                        ConsoleUI.PrintItems(all);
+                        break;
+                    case "2":
+                        Console.Write("Title contains: ");
+                        var q = Console.ReadLine() ?? string.Empty;
+                        var found = libFacade.SearchByTitle(q);
+                        ConsoleUI.PrintItems(found);
+                        break;
+                    case "3":
+                        Console.Write("Enter item id to borrow: ");
+                        if (int.TryParse(Console.ReadLine(), out var bid))
+                        {
+                            Console.Write("Member name: ");
+                            var member = Console.ReadLine() ?? "Guest";
+                            var ok = libFacade.BorrowItem(bid, member);
+                            ConsoleUI.PrintResult(ok, "Borrowed", "Cannot borrow");
+                        }
+                        break;
+                    case "4":
+                        Console.Write("Enter item id to return: ");
+                        if (int.TryParse(Console.ReadLine(), out var rid))
+                        {
+                            var ok = libFacade.ReturnItem(rid);
+                            ConsoleUI.PrintResult(ok, "Returned", "Cannot return");
+                        }
+                        break;
+                    case "5":
+                        Console.Write("Admin password: ");
+                        var pwd = ReadPassword();
+                        Console.WriteLine();
+                        Console.Write("Type (book/mag): ");
+                        var type = (Console.ReadLine() ?? "book").ToLowerInvariant();
+                        Console.Write("Title: ");
+                        var title = Console.ReadLine() ?? "Untitled";
+                        Console.Write("Author: ");
+                        var author = Console.ReadLine() ?? "Unknown";
+                        Console.Write("Year: ");
+                        var yearInput = Console.ReadLine();
+                        _ = int.TryParse(yearInput, out var year);
+                        IItem item;
+                        if (type.StartsWith("mag"))
+                            item = magazineFactory.CreateItem(title, author, year);
+                        else
+                            item = bookFactory.CreateItem(title, author, year);
+
+                        var added = proxy.AddBookWithPassword(item, pwd);
+                        ConsoleUI.PrintResult(added, "Item added", "Failed to add (auth)");
+                        break;
+                    case "6":
+                        Console.Write("Enter item id for details: ");
+                        if (int.TryParse(Console.ReadLine(), out var did))
+                        {
+                            var it = libFacade.GetItemById(did);
+                            if (it != null)
+                            {
+                                // Decorator: add late-fee calculation for display
+                                var decorated = new LateFeeDecorator(it);
+                                Console.WriteLine(decorated.GetDisplay());
+                            }
+                            else
+                            {
+                                Console.WriteLine("Item not found");
+                            }
+                        }
+                        break;
+                    case "7":
+                        exit = true;
+                        break;
+                    default:
+                        Console.WriteLine("Invalid option");
+                        break;
+                }
+
+                Console.WriteLine();
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey(true);
+                Console.Clear();
+                ConsoleUI.DrawHeader("Simple Library Management System");
+            }
+
+            ConsoleUI.DrawFooter("Goodbye");
+        }
+
+        private static string ReadPassword()
+        {
+            var pwd = string.Empty;
+            ConsoleKeyInfo key;
+            do
+            {
+                key = Console.ReadKey(true);
+                if (key.Key == ConsoleKey.Backspace && pwd.Length > 0)
+                {
+                    pwd = pwd[0..^1];
+                    Console.Write("\b \b");
+                }
+                else if (!char.IsControl(key.KeyChar))
+                {
+                    pwd += key.KeyChar;
+                    Console.Write("*");
+                }
+            } while (key.Key != ConsoleKey.Enter);
+
+            return pwd;
+        }
+    }
+}

@@ -1,0 +1,42 @@
+﻿using System;
+using System.Collections.Generic;
+using ConsoleApp2.Models;
+
+namespace ConsoleApp2.UI
+{
+    public static class ConsoleUI
+    {
+        public static void DrawHeader(string title)
+        {
+            Console.WriteLine(new string('=', 60));
+            Console.WriteLine($"  {title}");
+            Console.WriteLine(new string('=', 60));
+            Console.WriteLine();
+        }
+
+        public static void DrawFooter(string text)
+        {
+            Console.WriteLine();
+            Console.WriteLine(new string('=', 60));
+            Console.WriteLine($"  {text}");
+            Console.WriteLine(new string('=', 60));
+        }
+
+        // Simple Print helper that directly uses Console.WriteLine
+        public static void Print(string message) => Console.WriteLine(message);
+        public static void Print(object? obj) => Console.WriteLine(obj);
+
+        public static void PrintItems(IEnumerable<IItem> items)
+        {
+            foreach (var it in items)
+            {
+                Console.WriteLine(it.GetBasicDisplay());
+            }
+        }
+
+        public static void PrintResult(bool ok, string okMsg, string failMsg)
+        {
+            Console.WriteLine(ok ? okMsg : failMsg);
+        }
+    }
+}
